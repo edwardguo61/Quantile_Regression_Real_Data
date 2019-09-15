@@ -1,3 +1,5 @@
+## 图南修改于2019.9.7。主要改动为在不同的估计方法之后计算相应的LOSS，并返回。
+## 新家rho、loss两个辅助函数
 # load packages
 library(plyr)
 library(quantreg)
@@ -13,8 +15,8 @@ globalEstimate <- function(X, Y, Tau){
   rq_global <- rq(Y~X, tau = Tau)
   
   # skip the intercept
-  beta_global <- coef(rq_global)[-1]
-  se_global <- summary(rq_global)$coefficients[-1, 2]
+  beta_global <- coef(rq_global)
+  se_global <- summary(rq_global,se="iid")$coefficients[, 2]
   
   return(list(beta = beta_global, se = se_global))
 }
@@ -35,7 +37,7 @@ oneshotEstimate <- function(X, Y, Tau, index = "data$Year"){
   
   returnBetaSE <- function(x){
     rq_temp <- rq(Y~.-index, x, tau = Tau)
-    return(c(coef(rq_temp)[-1], summary(rq_temp)$coefficients[-1, 2]))
+    return(c(coef(rq_temp), summary(rq_temp,se="iid")$coefficients[, 2]))
   }
   
   # fit a quantile regression for each machine
@@ -43,16 +45,15 @@ oneshotEstimate <- function(X, Y, Tau, index = "data$Year"){
   
   # return mean of coefficients for all machines
   # return se of coefficients for all machines
-  return(list(beta = apply(result[,2:(P+1)], 2, mean), 
-              se = apply(result[,(P+2):(2*P+1)], 2, mean)))
+  return(list(beta = apply(result[,2:(P+2)], 2, mean), 
+              se = apply(result[,(P+3):(2*P+3)], 2, mean)))
 }
 
-onestepEstimate <- function(i, x, Y, Tau){
+onestepEstimate <- function(x, Y, Tau){
   # Return one step estimate
   
   # Args
-  # i - index of replication
-  # X;Y - simulated data
+  # x;Y - ROE data
   # Tau - quantile of regression
   
   # Define Gaussian Kernel Function
@@ -90,13 +91,33 @@ onestepEstimate <- function(i, x, Y, Tau){
   f0 <- sum(G_kernel(error/h)) / (N*h)                     # kernel density
   
   # update pilot estimation to get the one-step estimation
+  X <- cbind(1, X)
   X_square_inverse <- solve(t(X) %*% X)
-  beta_one_step <- beta_pilot + (1/f0) * X_square_inverse %*% (t(X) %*% (Tau - 1*(error<=0)))
+  beta_one_step <- c(beta_pilot_intercept, beta_pilot) + 
+    (1/f0) * X_square_inverse %*% (t(X) %*% (Tau - 1*(error<=0)))
   
   # Calculate standard error of estimates
   omega_square <- Tau * (1-Tau) * f0^(-2)
   var_onestep <- omega_square * X_square_inverse
   se_onestep <- sqrt(diag(var_onestep))
   
-  return(c(t(beta_one_step), se_onestep))
+  return(list(beta = as.vector(beta_one_step), se = se_onestep))
+}
+
+rqLoss <- function(X, Y, tau, beta){
+  # Return loss of quantile regression
+  
+  # Args
+  # X;Y - ROE data
+  # Tau - quantile of regression
+  # beta - estimates of quantile regression
+  
+  # Define loss function
+  rho <- function(u, tau)
+  {
+    return(u * (tau - 1 * (u <= 0)))
+  }
+  
+  X <- cbind(1,X)
+  return(sum(rho(Y - as.matrix(X) %*% beta, tau)))
 }

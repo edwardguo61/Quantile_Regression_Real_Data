@@ -15,23 +15,23 @@ histLogROE <- function(data, filename = "hist.pdf"){
   dev.off()
 }
 
-plotRPMSE <- function(RPMSE, filename = "RPMSE.pdf"){
-  # Draw RPMSE of onestep/oneshot with different taus
+plotDL <- function(LOSS, filename = "DL.pdf"){
+  # Draw DL of onestep/oneshot with different taus
   
   # Args:
-  # RPMSE - RPMSE of ROE data using onestep/oneshot
+  # LOSS - LOSS of global/onestep/oneshot rqs for tau sequence
   # filename - filename of saved plot
   
-  win.graph(width=2800,height=2000)
-  par(mfrow = c(3,2))
-  for(i in 1:P)
-  {
-    plot(RPMSE[,i]~Tau, pch = 4, type = "o", col = "lightblue", ylim = c(0,0.4), 
-         xlab = expression(tau), ylab = "RPMSE", lwd=2, xaxt = "n")
-    axis(1, Tau, labels = Tau)
-    lines(RPMSE[,i+P]~Tau, pch = 1, lty = 5, type = "o",col = "red", lwd = 2)
-    abline(h = 1)
-  }
-  savePlot("RPMSE", type = c("pdf"), device = dev.cur(), restoreConsole = T)
+  win.graph(width = 2000, height = 1400)
+  par(mfrow = c(1,1))
+  # plot the DL of oneshot estimation
+  plot(LOSS$loss_oneshot - LOSS$loss_global ~ Tau,
+       pch = 4, type = "o", col = "lightblue", lwd = 2,
+       xlab = expression(tau), ylab = "DL", xaxt = "n")
+  axis(1, Tau, labels = Tau)
+  # plot the DL of onestep estimation
+  lines(LOSS$loss_onestep - LOSS$loss_global ~ Tau,
+        pch = 1, lty = 5, type = "o", col = "red", lwd = 2)
+  savePlot(filename, type = c("pdf"), device = dev.cur(), restoreConsole = T)
   dev.off()
 }

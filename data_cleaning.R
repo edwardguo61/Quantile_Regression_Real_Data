@@ -3,9 +3,9 @@ library(tidyverse)
 library(lubridate)
 
 # read data
-data_raw <- read.table("FAR_Finidx.txt", sep = "\t", 
+data_raw <- read.table("C:\\Users\\xiaoy\\Desktop\\quantile\\RealdataAnalysis\\FAR_Finidx.txt", sep = "\t", 
                        header = TRUE, encoding = "UTF-8")
-data_profit <- read.table("FS_Comins.txt", sep = "\t",
+data_profit <- read.table("C:\\Users\\xiaoy\\Desktop\\quantile\\RealdataAnalysis\\FS_Comins.txt", sep = "\t",
                           header = TRUE, encoding = "UTF-8")
 
 # data cleaning
@@ -33,8 +33,8 @@ data <- data_raw %>%
                      Date = as.Date(Accper)) %>%   # Date
               filter(substr(Date,6,7) == "12") %>% # Get profit data in December every year
               group_by(Code, Date) %>%
-              dplyr::summarise(Sales = max(B001100000, 
-                                           na.rm = T)) %>% # Sales of current year
+              summarise(Sales = max(B001100000, 
+                                    na.rm = T)) %>% # Sales of current year
               # Get rid of discontinous data
               group_by(Code) %>%
               mutate(Diff = c(diff(year(Date)),1)) %>%
