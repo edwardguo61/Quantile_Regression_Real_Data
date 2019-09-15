@@ -1,5 +1,3 @@
-## 图南修改于2019.9.7。主要改动为在不同的估计方法之后计算相应的LOSS，并返回。
-## 新家rho、loss两个辅助函数
 # load packages
 library(plyr)
 library(quantreg)
